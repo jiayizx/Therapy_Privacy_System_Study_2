@@ -434,7 +434,7 @@ def main():
         st.session_state.chat_finished = True
         if st.session_state.chat_finished:
             if st.button("Go Post Survey"):
-                target_page = "pages/post_survey_one.py"
+                target_page = "pages/post_survey_1.py"
                 st.switch_page(target_page)
 
 

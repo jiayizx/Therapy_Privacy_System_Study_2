@@ -268,7 +268,7 @@ def get_user_selections():
 
     if not st.session_state.user_selections_fixed and not survey_info:
         if st.button("Proceed to Survey 3"):
-            target_page = "pages/post_survey_three.py"
+            target_page = "pages/post_survey_3.py"
             st.switch_page(target_page)
         
 

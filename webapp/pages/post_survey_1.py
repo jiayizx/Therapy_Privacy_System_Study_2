@@ -109,7 +109,7 @@ def main():
     if st.session_state.responses_submitted:
         st.session_state.survey_1_completed = True
         if st.button("Part 2: Proceed to Post Survey Two"):
-            target_page = "pages/post_survey_two.py"
+            target_page = "pages/post_survey_2.py"
             st.switch_page(target_page)
 
 
