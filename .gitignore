@@ -1,0 +1,18 @@
+# Ignore the secrets.toml file in the webapp/.streamlit directory
+.streamlit/secrets.toml
+
+# Ignore all log files with .log extension
+*.log
+
+# ignore csv files
+survey_one_responses.csv
+survey_two_responses.csv
+
+# Ignore the pycache directories
+# Byte-compiled / optimized / DLL files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+**/*.py[cod]
+*$py.class
+**/*$py.class

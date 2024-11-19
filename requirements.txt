@@ -1,0 +1,13 @@
+openai
+cohere
+anthropic
+streamlit
+streamlit-extras
+pathlib
+python-dotenv
+gymnasium
+torch
+pymongo[srv]
+boto3
+streamlit-survey
+firebase-admin
