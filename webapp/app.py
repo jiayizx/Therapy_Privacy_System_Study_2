@@ -338,7 +338,7 @@ def main():
     configure_streamlit()
     ask_prolific_id()
     # print(f"Prolific ID: {st.session_state.prolific_id}")
-    # disable_copy_paste()
+    disable_copy_paste()
     setup_logging()
     load_environment_variables()
     setup_firebase() # Initialize Firebase Firestore connection
