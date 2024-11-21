@@ -541,7 +541,7 @@ def store_feedback():
         try:
             db = st.session_state.firestore_db
             # Reference to the collection
-            collection_ref = db.collection('group_one_survey_two_responses')
+            collection_ref = db.collection('group_two_survey_two_responses')
 
             # Create a unique document name using Prolific ID and timestamp
             document_name = f"{prolific_id}_{timestamp}"
