@@ -59,38 +59,42 @@ def load_environment_variables():
     if not openai_api_key:
         raise ValueError("OpenAI API key not found in environment variables. Please set the OPENAI_API_KEY environment variable.")
     secure_log_api_key(openai_api_key)
-    
+
 
 def ask_prolific_id():
+    """Handles the input of Prolific ID and website password."""
     if "prolific_id_entered" not in st.session_state:
         st.session_state.prolific_id_entered = False
 
     if "prolific_id" not in st.session_state:
         st.session_state.prolific_id = None
-
+    
+    # Only display the Prolific ID input screen if it has not been entered
     if not st.session_state.prolific_id_entered:
-        st.title("Please enter your Prolific ID")
-        prolific_id = st.text_input("Prolific ID", type="default")
-        st.session_state.prolific_id = prolific_id
-        password = st.text_input("Website Password", type="password")
+        st.header("Role-play as Alex and Chat with the AI therapist")
+        prolific_id = st.text_input("Your Prolific ID", type="default")
+        password = st.text_input("Chat Password", type="password")
         web_login_password = st.secrets["web_login_password"]
-        if st.button("Submit"):
-            if prolific_id:
-                if password == web_login_password:
-                    st.session_state.prolific_id_entered = True
-                    st.success("Prolific ID accepted! You can now proceed to the chat page.")
-                    st.rerun()
-                else:
-                    st.warning("Please enter a valid password to continue.")
-            else:
+
+        if st.button("Enter"):
+            # Validate Prolific ID and Password
+            if prolific_id and password == web_login_password:
+                st.session_state.prolific_id = prolific_id
+                st.session_state.prolific_id_entered = True
+                st.session_state.phase = "chat"  # Move to chat phase
+                st.rerun()  # Trigger a re-run immediately to move to the chat page
+            elif not prolific_id:
                 st.warning("Please enter a valid Prolific ID to continue.")
-        st.stop()
+            elif password != web_login_password:
+                st.warning("Please enter a valid password to continue.")
+
+        # Do not call st.stop() here. It causes the UI to freeze at this stage.
+        return
 
 
 def configure_streamlit():
     """Configure Streamlit page settings."""
-    st.set_page_config(initial_sidebar_state="expanded", page_title="AI-powered Therapist", layout="wide")
-
+    st.set_page_config(initial_sidebar_state="expanded", page_title="Chat wit AI Therapist", layout="wide")
 
 def initialize_session_state():
     """Initialize session state variables."""
@@ -102,16 +106,18 @@ def initialize_session_state():
         st.session_state.chat_finished = False
     if "post_survey_options" not in st.session_state:
         st.session_state.post_survey_options = False
+    if "start_button_clicked" not in st.session_state:
+        st.session_state.start_button_clicked = False
 
 
 def start_conversation(agent_1, agent_2, therapist_system_prompt, persuasion_techique, init_message_flag,
-                       is_stream, event, min_interactions, words_limit, persuasion_flag, prolific_id):
+                       is_stream, event, min_interactions, max_iteractions, words_limit, persuasion_flag, prolific_id):
     """Initialize the conversation settings and environment."""
     # Check if both agents are human
     if agent_1 == "Human" and agent_2 == "Human":
         st.error("Error: Both agents cannot be human. Please select at least one AI agent.")
         st.stop()
-    
+
     human_details = {
         "engine": "Human",
         "system": "",
@@ -143,7 +149,7 @@ def start_conversation(agent_1, agent_2, therapist_system_prompt, persuasion_tec
             agent_2_details
         ],
         "init_message": None,
-        "transit": ["assistant", "user"] * min_interactions,
+        "transit": ["assistant", "user"] * max_iteractions,
         "persuasion_flag": persuasion_flag,
         "words_limit": words_limit,
     }
@@ -165,23 +171,40 @@ def display_messages():
         with st.chat_message(message["turn"]):
             st.write(message["response"])
 
+def display_persona_info(persona_category_info, main_categories):
+    """ Display the persona information in the sidebar."""
+    if "sidebar_container" not in st.session_state:
+        st.session_state.sidebar_container = st.sidebar.container()
+    with st.session_state.sidebar_container:
+    # Add the static personal information section
+        st.markdown("#### Personal Information")
+        for category in main_categories:
+            if category != "Seeking Help":
+                with st.expander(category):
+                    # Display all information related to the selected category
+                    for info in persona_category_info[category]:
+                        st.write(info)
 
 def retrieve_persona_details(formatted_query, persona_hierarchy_info, main_categories, persona_category_info):
     """Retrieve and display persona details based on the conversation."""
     detected_groups = gpt4_search_persona(formatted_query, persona_hierarchy_info)
 
     # Display relevant persona details or newly generated persona information in the sidebar
-    sidebar_container = st.sidebar.container()
+    st.session_state.sidebar_container = st.sidebar.container()
 
-    with sidebar_container:
-        st.markdown("#### Detected Related Personal Information")
+    with st.session_state.sidebar_container:
+        st.markdown("#### Possible Related Information")
         if detected_groups and detected_groups != 'None':
             # st.write(f"**Detected Groups:** {detected_groups}")
             category_map = {cat.lower(): cat for cat in persona_category_info.keys()}
             for group in detected_groups.split(', '):
                 proper_group = category_map.get(group.lower().strip())
                 if proper_group and proper_group in persona_category_info:
-                    st.markdown(f"- **{proper_group}**: {', '.join(persona_category_info[proper_group])}")
+                    st.markdown(f"**{proper_group}**:")
+                    for item in persona_category_info[proper_group]:
+                        st.markdown(f"- {item}")
+                # if proper_group and proper_group in persona_category_info:
+                #     st.markdown(f"- **{proper_group}**: {'<br>'.join(persona_category_info[proper_group])}")
         else:
             example_system_prompt = f"""
                 Here is the recent chat history: "{formatted_query}"
@@ -208,23 +231,26 @@ def retrieve_persona_details(formatted_query, persona_hierarchy_info, main_categ
             )
             st.write("No relevant persona information found. Here is the **newly generated persona information**: ", generated_info)
 
-        # Add the static personal information section
-        st.markdown("#### Personal Information")
-        for category in main_categories:
-            if category != "Seeking Help":
-                with st.expander(category):
-                    # Display all information related to the selected category
-                    for info in persona_category_info[category]:
-                        st.write(info)
+        display_persona_info(persona_category_info, main_categories)
 
 
-def run_conversation(env, players, is_stream, persona_hierarchy_info, main_categories, persona_category_info):
+def run_conversation(env, players, is_stream, persona_hierarchy_info, main_categories, persona_category_info
+                     , min_interaction_time, elapsed_time):
     """Handle the main conversation loop."""
+    if st.session_state.current_iteration >= st.session_state.iterations or elapsed_time >= min_interaction_time:
+        if not st.session_state_terminate_button_displayed:  # Only display the button if it hasn't been displayed yet
+            st.session_state_terminated_button = st.button("End Therapy (Feel feee to end anytime)", key="terminate_button")
+            st.session_state_terminate_button_displayed = True  # Set the flag to indicate the button has been displayed
+
+    if st.session_state_terminated_button:
+        st.session_state.chat_finished = True
+        return
+
     action = env.sample_action()
     technique = None
     if (str(action) == "Human-input") and (st.session_state.temp_response == ""):
         with st.form(key='human_input_form', clear_on_submit=True):
-            response = st.text_input("Your input:", key="human_input")
+            response = st.text_input("You:", key="human_input") # "You" instead of "Your turn"
             submit_button = st.form_submit_button(label='Send')
         if submit_button and response:
             with st.chat_message(players[st.session_state.turn % 2]):
@@ -264,7 +290,8 @@ def run_conversation(env, players, is_stream, persona_hierarchy_info, main_categ
         human_response = response
         formatted_query = f"Therapist: {previous_response}\nPatient: {human_response}"
         retrieve_persona_details(formatted_query, persona_hierarchy_info, main_categories, persona_category_info)
-
+    if "sidebar_container" not in st.session_state:
+        display_persona_info(persona_category_info, main_categories)
     _, reward, terminated, truncated, info = env.step(action, technique, response)
     st.session_state.turn += 1
     st.session_state.temp_response = ""
@@ -276,15 +303,16 @@ def run_conversation(env, players, is_stream, persona_hierarchy_info, main_categ
     #     return
 
 
-def sidebar_seeking_help(persona_category_info):
-    with st.sidebar:
-        category = "Seeking Help"
-        with st.expander(category, expanded=True):
-            image_path = "webapp/assets/seeking_help_img.jpg"
-            st.image(image_path, use_container_width=True)
-            # Display all information related to the selected category
-            for info in persona_category_info[category]:
-                st.write(info)
+# def sidebar_seeking_help(persona_category_info):
+#     with st.sidebar:
+        # category = "Seeking Help"
+        # with st.expander(category, expanded=True):
+        #     # image_path = "webapp/assets/seeking_help_img.jpg"
+        #     # image_path = "webapp/assets/UserBioWeb.png"
+        #     # st.image(image_path, use_container_width=True)
+        #     # Display all information related to the selected category
+        #     for info in persona_category_info[category]:
+        #         st.write(info)
 
 
 def disable_copy_paste():
@@ -302,6 +330,7 @@ def disable_copy_paste():
         }
         </style>
         """, unsafe_allow_html=True)
+    st
 
 
 def save_chat_history_to_firebase(prolific_id, chat_history):
@@ -328,24 +357,20 @@ def save_chat_history_to_firebase(prolific_id, chat_history):
         logging.error(f"Failed to save chat history to Firebase Firestore: {e}")
 
 
-
 def main():
     """Main function to run the Streamlit app."""
     PERSONA_FILENAME = "persona_info_hierarchy.csv"
     UNN_INFO_FNAME = "unn_info.csv"
-    POSTHOC_SURVEY_INFO_FNAME = "posthoc_survey.csv"
     
+    # Streamlit page configuration
     configure_streamlit()
-    ask_prolific_id()
-    # print(f"Prolific ID: {st.session_state.prolific_id}")
-    disable_copy_paste()
+    initialize_session_state()
+    # disable_copy_paste()
     setup_logging()
     load_environment_variables()
-    setup_firebase() # Initialize Firebase Firestore connection
-    
+    setup_firebase() # Debug
     main_categories, persona_category_info, persona_hierarchy_info = read_persona_csv(PERSONA_FILENAME)
     read_unnecessary_info_csv(UNN_INFO_FNAME)
-    initialize_session_state()
 
     # Set default values for variables
     persuasion_techique = "0: None"
@@ -356,9 +381,9 @@ def main():
     agent_1 = "gpt-4o-mini"
     agent_2 = "Human"
     event = "Therapy"
-    min_interactions = 20 # 8 interactins, 4 turns
-    min_interaction_time = 600 # seconds
-
+    min_interactions = 2 # 8 interactions, 4 turns
+    max_iteractions = 40 # 20 turns
+    min_interaction_time = 600 # seconds, 10 min
     words_limit = 100
 
     therapist_system_prompt = """
@@ -369,72 +394,72 @@ def main():
     2. Only ask one question at a time.
     """
 
-    # Streamlit sidebar
-    st.sidebar.title("Settings")
-    sidebar_seeking_help(persona_category_info)
+    # Initialize the phase in session state if it does not exist
+    if "phase" not in st.session_state:
+        st.session_state.phase = "initial"  # The initial phase is set to ask Prolific ID
 
-    start = st.button("Start Conversation")
-    # if st.button("Clear Chat"):
-    #     clean_chat()
-
-    if start:
-        # Initialize conversation
-        start_conversation(
-            agent_1, agent_2, therapist_system_prompt, 
-            persuasion_techique, init_message_flag,
-            is_stream, event, min_interactions, words_limit,
-            persuasion_flag, st.session_state.prolific_id
-        )
-
-
-    players = ["assistant", "user"]
-    st.session_state.feedback_options = False
-
-    if ("env" in st.session_state) and (st.session_state.env is not None):
-        env = st.session_state.env
-
-        # Display all messages
-        display_messages()
-
-        elapsed_time = time.time() - st.session_state.start_time
-        print(f"Elapsed time: {elapsed_time}")
-        while st.session_state.current_iteration < st.session_state.iterations and elapsed_time < min_interaction_time:
-            # Run conversation
-            run_conversation(env, players, is_stream, persona_hierarchy_info, main_categories, persona_category_info)
-            
-            if st.session_state.current_iteration >= st.session_state.iterations or elapsed_time >= min_interaction_time:
-                if st.button("Terminate Chat"):
-                    st.success("Chat terminated. You can review the chat history.")
-                    break
-
-        # deal with the chat history
-        chat_history = env.log_state()
-        # print("Chat history: ", chat_history)
-        save_chat_history_to_firebase(st.session_state.prolific_id, chat_history)
-
-
-        # # Collect user feedback
-        # # Get the pre survey only if the pre survey options are not displayed already
-        # if "pre_survey_options" not in st.session_state:
-        #     st.session_state.pre_survey_options = True
-
-        # # Placeholder for the pre-feedback survey
-        # if st.session_state.pre_survey_options:
-        #     st.session_state.pre_survey_options = False
-        #     pre_survey()
-
-        # # Get the user's feedback on the revealed detected private information
-        # get_user_selections()
-
-        # # Display the survey questions after the conversation ends
-        # if st.session_state.post_survey_options:
-        #     post_survey()
-        #     st.session_state.posthoc_survey_info = read_posthoc_survey_info_csv(POSTHOC_SURVEY_INFO_FNAME)
+    # Control flow based on the phase
+    if st.session_state.phase == "initial":
+        # Display "Enter Prolific ID" and related UI elements
+        ask_prolific_id()
         
-        st.session_state.chat_finished = True
-        if st.session_state.chat_finished:
-            if st.button("Go Post Survey"):
-                target_page = "pages/post_survey_1.py"
+        print("Prolific ID entered:", st.session_state.prolific_id_entered)
+        print("Current phase:", st.session_state.phase)
+
+    elif st.session_state.phase == "chat" or st.session_state.phase == "post_survey":
+
+        # Place two images in like click to reveal the information # Half width for each image side by side
+        header = st.container()
+        col1, col2 = header.columns([3,3])
+        col1.image("webapp/assets/UserBioWeb1.png", use_container_width=True)
+        col2.image("webapp/assets/UserBioWeb2.png", use_container_width=True)
+
+        # Streamlit sidebar
+        st.sidebar.title("Your Related Information")
+        # sidebar_seeking_help(persona_category_info)
+
+        # Start the conversation if not already started
+        if "conversation_initialized" not in st.session_state:
+            # st.write("Please role-play as Alex and chat with the AI therapist.")
+            start_conversation(
+                agent_1, agent_2, therapist_system_prompt,
+                persuasion_techique, init_message_flag,
+                is_stream, event, min_interactions, max_iteractions,
+                words_limit, persuasion_flag, st.session_state.prolific_id
+            )
+            st.session_state.conversation_initialized = True
+
+        players = ["assistant", "user"]
+
+        if ("env" in st.session_state) and (st.session_state.env is not None):
+            env = st.session_state.env
+
+            # Display all chat messages (history)
+            display_messages()
+
+            # Handle conversation loop
+            if st.session_state.phase == "chat":
+                elapsed_time = time.time() - st.session_state.start_time
+
+                st.session_state_terminate_button_displayed = False
+                st.session_state_terminated_button = False
+                while True:
+                    run_conversation(env, players, is_stream, persona_hierarchy_info, main_categories, persona_category_info,
+                                     min_interaction_time, elapsed_time)
+
+                    if st.session_state.chat_finished:
+                        st.session_state.phase = "post_survey"
+                        chat_history = env.log_state()
+                        save_chat_history_to_firebase(st.session_state.prolific_id, chat_history) # Debug
+                        target_page = "pages/Survey.py"
+                        st.switch_page(target_page)
+                        # st.rerun()  # Trigger rerun to refresh UI
+
+        # If the chat is finished, proceed to the post-survey phase
+        # Survey section should be displayed if in the post-survey phase
+        if st.session_state.phase == "post_survey":
+            if st.button("Proceed to Survey"):
+                target_page = "pages/Survey.py"
                 st.switch_page(target_page)
 
 
