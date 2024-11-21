@@ -282,7 +282,7 @@ def get_user_selections():
 
     # Configuring the setup
     setup_survey_config()
-    # disable_copy_paste()
+    disable_copy_paste()
 
     if not st.session_state.user_selections_fixed:
         # Display the survey information to the user for getting the user selections

@@ -381,7 +381,7 @@ def main():
     agent_1 = "gpt-4o-mini"
     agent_2 = "Human"
     event = "Therapy"
-    min_interactions = 2 # 8 interactions, 4 turns
+    min_interactions = 20 # 8 interactions, 4 turns
     max_iteractions = 40 # 20 turns
     min_interaction_time = 600 # seconds, 10 min
     words_limit = 100
