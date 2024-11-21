@@ -378,7 +378,7 @@ def main():
 
     persuasion_flag = True  # Supporting the persuasion technique in the therapy session or not
     is_stream = True
-    agent_1 = "gpt-4o-mini"
+    agent_1 = "gpt-4o"
     agent_2 = "Human"
     event = "Therapy"
     min_interactions = 20 # 8 interactions, 4 turns
