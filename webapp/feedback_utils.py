@@ -602,7 +602,7 @@ def store_feedback():
             collection_ref = db.collection('group_two_survey_two_responses')
 
             # Create a unique document name using Prolific ID and timestamp
-            document_name = f"{prolific_id}_{timestamp}"
+            document_name = f"survey_two_{prolific_id}_{int(time.time())}" 
 
             # Add the feedback document
             collection_ref.document(document_name).set(feedback)
