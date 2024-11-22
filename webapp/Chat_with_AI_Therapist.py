@@ -351,7 +351,7 @@ def main():
     initialize_session_state()
     setup_logging()
     load_environment_variables()
-    # setup_firebase() # Debug
+    setup_firebase() # Debug
     main_categories, persona_category_info, persona_hierarchy_info = read_persona_csv(PERSONA_FILENAME)
     read_unnecessary_info_csv(UNN_INFO_FNAME)
 
@@ -359,12 +359,12 @@ def main():
     persuasion_techique = "0: None"
     init_message_flag = False
 
-    persuasion_flag = False  # Supporting the persuasion technique in the therapy session or not
+    persuasion_flag = True  # Supporting the persuasion technique in the therapy session or not
     is_stream = True
     agent_1 = "gpt-4o"
     agent_2 = "Human"
     event = "Therapy"
-    min_interactions = 4 # 20 interactions, 10 turns # Debug
+    min_interactions = 20 # 20 interactions, 10 turns # Debug
     max_iteractions = 40 # 40 interactions, 20 turns
     min_interaction_time = 540 # seconds, 10 min
     words_limit = 100
@@ -391,7 +391,7 @@ def main():
 
     elif st.session_state.phase == "chat" or st.session_state.phase == "post_survey":
         # Disable the copy-paste functionality
-        # disable_copy_paste()
+        disable_copy_paste() # Debug
         # Place two images in like click to reveal the information # Half width for each image side by side
         header = st.container()
         header.image("webapp/assets/instruction.png", use_container_width=True)
