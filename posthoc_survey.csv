@@ -10,7 +10,7 @@ indirectPII_self,3,The user is single.,Your marital status: single
 indirectPII_self,3,The user is a Marketing lead.,Your position: marketing lead
 indirectPII_self,3,The user works at Bright Media.,You work at Bright Media
 indirectPII_self,3,The user has lived in New York for the past 18 year. / The users moved to New York City in 2006 at the age of 10.,You've lived in NYC for 18 years/ You moved to NYC in 2006 at the age of 10
-indirectPII_self,3,The user've been to Berlin for a month.,You've been in Berlin for a month
+indirectPII_self,3,The user've relocated to Berlin for a month.,You've relocated to Berlin for a month
 indirectPII_self,3,The user was born in Honolulu / in 1996.,You're born in Honolulu / in 1996
 nonPII_others,4,Expanding the European market is the company’s yet-to-be-revealed core strategy.,Expanding the European market is your company’s yet-to-be-revealed core strategy
 nonPII_others,4,Emily is getting married next Saturday in New York.,Emily is getting married next Saturday in NYC

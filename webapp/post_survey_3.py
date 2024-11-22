@@ -3,6 +3,9 @@ import firebase_admin
 from firebase_admin import firestore
 import time
 import logging
+import webbrowser
+
+PROLIFIC_URL = "https://app.prolific.co/submissions/complete?cc=CWU9VX3E"
 
 # Assuming Firebase setup has already been initialized
 
@@ -39,17 +42,13 @@ def update_selected_options():
             if isinstance(value, bool) and value and option.startswith('cbox_')
         ]
 
-def close_and_redirect():
-    js = """
-        <script>
-            window.location.href = 'https://app.prolific.co/submissions/complete?cc=CWU9VX3E';
-            window.close();
-        </script>
-    """
-    st.components.v1.html(js)
+def close_and_redirect(url=PROLIFIC_URL):
+    """Close the current tab after 5 seconds."""
+    webbrowser.open(url)
 
 
 def post_survey_three():
+    """ Main function for the post survey part 2 page. """
     # st.write("### Post Survey Part 3: Demographic Information")
 
     if 'survey_2_completed' not in st.session_state:
@@ -169,10 +168,5 @@ def post_survey_three():
             st.session_state.survey_3_completed = True
 
             # Close the current tab after 5 seconds
-            # close_and_redirect()
-
-    # Optional: Display a message if the survey is already completed
-    if 'survey_submitted' in st.session_state and st.session_state.survey_submitted:
-        st.write("You have already completed all the survey. Thank you for your participation!")
-        st.link_button("Return to Prolific", "https://app.prolific.co/submissions/complete?cc=CWU9VX3E")
-        close_and_redirect()
+            close_and_redirect()
+            st.rerun()

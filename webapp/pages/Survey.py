@@ -1,9 +1,29 @@
 import streamlit as st
 from webapp.post_survey_1 import post_survey_one
 from webapp.post_survey_2 import post_survey_two, prep_survey_two
-from webapp.post_survey_3 import post_survey_three
+from webapp.post_survey_3 import close_and_redirect, post_survey_three
+
+def style_code():
+    """ CSS style for the survey page. """
+    st.components.v1.html(
+        """
+        <style>
+        st-button-prolific {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            display: block;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+        }
+        </style>
+        """, height=0
+    )
+
 
 def main():
+    """ Main function for the survey page. """
     st.title("Survey")
 
     # Ensure Prolific ID is available
@@ -27,7 +47,10 @@ def main():
     elif 'survey_3_completed' not in st.session_state:
         post_survey_three()
     else:
-        st.write("You have already completed the survey. Thank you!")
+        st.write("You have already completed the survey.")
+        style_code()
+        if st.button("Back to the Prolific and complete the task!", key="prolific"):
+            close_and_redirect()
 
 if __name__ == "__main__":
     main()
