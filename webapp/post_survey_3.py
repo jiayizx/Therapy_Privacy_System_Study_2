@@ -16,7 +16,7 @@ def save_survey_two_response_to_firebase(prolific_id, responses):
         return
 
     db = st.session_state.firestore_db
-    document_name = f"survey_two_{prolific_id}_{int(time.time())}"  # Create a unique document name using prolific_id and timestamp
+    document_name = f"survey_three_{prolific_id}_{int(time.time())}"  # Create a unique document name using prolific_id and timestamp
 
     # Prepare the data to be saved
     survey_document = {
