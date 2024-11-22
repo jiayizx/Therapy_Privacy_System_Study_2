@@ -335,7 +335,7 @@ def save_chat_history_to_firebase(prolific_id, chat_history):
 
     try:
         # Save the chat document to the Firestore collection named "chat_histories"
-        db.collection("group_one_chat_histories").document(document_name).set(chat_document)
+        db.collection("group_two_chat_histories").document(document_name).set(chat_document)
         logging.info("Chat history successfully saved to Firebase Firestore.")
     except Exception as e:
         logging.error(f"Failed to save chat history to Firebase Firestore: {e}")
