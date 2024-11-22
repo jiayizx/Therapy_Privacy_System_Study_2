@@ -24,11 +24,20 @@ def save_survey_two_response_to_firebase(prolific_id, responses):
 
     try:
         # Save the survey document to the Firestore collection named "survey_two_responses"
-        db.collection("group_two_survey_three_responses").document(document_name).set(survey_document)
+        db.collection("group_one_survey_three_responses").document(document_name).set(survey_document)
         logging.info("Survey Part 3 response successfully saved to Firebase Firestore.")
     except Exception as e:
         logging.error(f"Failed to save Survey Part 2 response to Firebase Firestore: {e}")
 
+
+def update_selected_options():
+    """Update the selected options based on the checkbox values."""
+    # st.session_state.selected_options = [st.session_state.prior_exp_options[int(option.split("_")[1])] for option, value in st.session_state.items() if value and option.startswith('cbox_')]
+    st.session_state.selected_options = [
+            st.session_state.prior_exp_options[int(option.split("_")[1])] 
+            for option, value in st.session_state.items() 
+            if isinstance(value, bool) and value and option.startswith('cbox_')
+        ]
 
 def close_and_redirect():
     js = """
@@ -115,22 +124,19 @@ def post_survey_three():
     if 'prior_experience' not in st.session_state:
         st.session_state.prior_experience = ""
 
-    prior_experience_options = [
-        "Select an option",
+    prior_experience_options = [ # "Select an option",
         "I've used an AI chatbot for therapy",
         "I've used an AI chatbot, but never for therapy (this is my first time)",
         "I've been to therapy with a human therapist, but not with an AI chatbot",
         "I've neither used an AI chatbot nor been to therapy",
     ]
 
-    prior_experience = st.selectbox(
-        "Select your prior experience with AI chatbot or therapy:",
-        options=prior_experience_options,
-        index=prior_experience_options.index(st.session_state.prior_experience) if st.session_state.prior_experience in prior_experience_options else 0,
-        disabled='survey_submitted' in st.session_state and st.session_state.survey_submitted
-    )
-
-    st.session_state.prior_experience = prior_experience
+    # Multiple choice selection
+    st.write("Select your prior experience with AI chatbot or therapy:")
+    st.session_state.prior_exp_options = prior_experience_options
+    for indx, option in enumerate(prior_experience_options):
+        st.checkbox(option, key=f'cbox_{indx}',on_change=update_selected_options,
+                    disabled=st.session_state.get("survey_submitted", False))
 
     # Submit button
     if st.button("Submit", disabled=st.session_state.get("survey_submitted", False)) and not ('survey_submitted' in st.session_state and st.session_state.survey_submitted):
@@ -141,7 +147,7 @@ def post_survey_three():
             st.error("Please select your gender identity.")
         elif highest_education == "Select your highest education":
             st.error("Please select your highest level of education.")
-        elif prior_experience == "Select an option":
+        elif len(st.session_state.get("selected_options", [])) == 0:
             st.error("Please select your prior experience with AI chatbot or therapy.")
         else:
             # Collect all responses
@@ -149,9 +155,9 @@ def post_survey_three():
                 'age_range': age_range,
                 'gender_identity': gender_identity,
                 'highest_education': highest_education,
-                'prior_experience': prior_experience,
+                'prior_experience': st.session_state.selected_options,
             }
-            
+
             # Store the responses in Firebase
             save_survey_two_response_to_firebase(st.session_state.prolific_id, responses)
 

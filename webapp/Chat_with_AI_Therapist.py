@@ -27,6 +27,8 @@ from therapy_utils import (
     gpt4_search_persona, read_persona_csv,
     read_unnecessary_info_csv
 )
+from feedback_utils import (
+    disable_copy_paste)
 
 
 def setup_logging():
@@ -239,7 +241,7 @@ def run_conversation(env, players, is_stream, persona_hierarchy_info, main_categ
     """Handle the main conversation loop."""
     if st.session_state.current_iteration >= st.session_state.iterations or elapsed_time >= min_interaction_time:
         if not st.session_state_terminate_button_displayed:  # Only display the button if it hasn't been displayed yet
-            st.session_state_terminated_button = st.button("End Therapy (Feel feee to end anytime)", key="terminate_button")
+            st.session_state_terminated_button = st.button("End Therapy (Feel free to end anytime)", key="terminate_button")
             st.session_state_terminate_button_displayed = True  # Set the flag to indicate the button has been displayed
 
     if st.session_state_terminated_button:
@@ -315,24 +317,6 @@ def run_conversation(env, players, is_stream, persona_hierarchy_info, main_categ
         #         st.write(info)
 
 
-def disable_copy_paste():
-    # Inject custom CSS to prevent text selection
-    st.markdown("""
-        <style>
-        * {
-            -webkit-user-select: none;  /* Disable text selection in Chrome, Safari, Opera */
-            -moz-user-select: none;     /* Disable text selection in Firefox */
-            -ms-user-select: none;      /* Disable text selection in Internet Explorer/Edge */
-            user-select: none;          /* Disable text selection in standard-compliant browsers */
-        }
-        body {
-            -webkit-touch-callout: none; /* Disable callouts in iOS Safari */
-        }
-        </style>
-        """, unsafe_allow_html=True)
-    st
-
-
 def save_chat_history_to_firebase(prolific_id, chat_history):
     """Save the chat history to Firebase Firestore."""
     if "firestore_db" not in st.session_state:
@@ -351,7 +335,7 @@ def save_chat_history_to_firebase(prolific_id, chat_history):
 
     try:
         # Save the chat document to the Firestore collection named "chat_histories"
-        db.collection("group_two_chat_histories").document(document_name).set(chat_document)
+        db.collection("group_one_chat_histories").document(document_name).set(chat_document)
         logging.info("Chat history successfully saved to Firebase Firestore.")
     except Exception as e:
         logging.error(f"Failed to save chat history to Firebase Firestore: {e}")
@@ -365,10 +349,9 @@ def main():
     # Streamlit page configuration
     configure_streamlit()
     initialize_session_state()
-    # disable_copy_paste()
     setup_logging()
     load_environment_variables()
-    setup_firebase() # Debug
+    # setup_firebase() # Debug
     main_categories, persona_category_info, persona_hierarchy_info = read_persona_csv(PERSONA_FILENAME)
     read_unnecessary_info_csv(UNN_INFO_FNAME)
 
@@ -376,14 +359,14 @@ def main():
     persuasion_techique = "0: None"
     init_message_flag = False
 
-    persuasion_flag = True  # Supporting the persuasion technique in the therapy session or not
+    persuasion_flag = False  # Supporting the persuasion technique in the therapy session or not
     is_stream = True
     agent_1 = "gpt-4o"
     agent_2 = "Human"
     event = "Therapy"
-    min_interactions = 20 # 8 interactions, 4 turns
-    max_iteractions = 40 # 20 turns
-    min_interaction_time = 600 # seconds, 10 min
+    min_interactions = 4 # 20 interactions, 10 turns # Debug
+    max_iteractions = 40 # 40 interactions, 20 turns
+    min_interaction_time = 540 # seconds, 10 min
     words_limit = 100
 
     therapist_system_prompt = """
@@ -402,14 +385,16 @@ def main():
     if st.session_state.phase == "initial":
         # Display "Enter Prolific ID" and related UI elements
         ask_prolific_id()
-        
+
         print("Prolific ID entered:", st.session_state.prolific_id_entered)
         print("Current phase:", st.session_state.phase)
 
     elif st.session_state.phase == "chat" or st.session_state.phase == "post_survey":
-
+        # Disable the copy-paste functionality
+        # disable_copy_paste()
         # Place two images in like click to reveal the information # Half width for each image side by side
         header = st.container()
+        header.image("webapp/assets/instruction.png", use_container_width=True)
         col1, col2 = header.columns([3,3])
         col1.image("webapp/assets/UserBioWeb1.png", use_container_width=True)
         col2.image("webapp/assets/UserBioWeb2.png", use_container_width=True)

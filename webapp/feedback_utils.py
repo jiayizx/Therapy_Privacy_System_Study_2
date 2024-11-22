@@ -13,12 +13,36 @@ from therapy_utils import generate_response, clean_chat
 
 MIN_WORDS = 10
 
+def enhance_evidence(evidence:str, usr_conv_list:List[str], agt_conv_list:List[str]) -> str:
+    """
+    Enhance the evidence by adding chatbot quesion reference in the click to see in chat feature.
+    """
+    # Obtains the question asked by the chatbot for the evidence
+    search_indx = None
+    for indx, message in enumerate(usr_conv_list):
+        if evidence in message:
+            print(f"""Evidence: {evidence}, indx: {indx}""")
+            search_indx = indx
+            break
+    if search_indx is not None:
+        agent_question = agt_conv_list[search_indx]
+        return f"AI therapy:{agent_question} {os.linesep} You: **{evidence}**"
+    # If the evidence is not found in the user conversation, return the evidence as it is
+    return f"You: **{evidence}**"
+
+
 def get_survey_sample(all_detections:dict, max_display:int = 10):
     """
     This function samples the survey questions for the user to provide feedback.
     """
+    user_conv_list = st.session_state.usr_conv_list
+    agent_conv_list = st.session_state.agt_conv_list
 
-    # If there are less than sample size, return all detections
+    for key in all_detections:
+        evidence = all_detections[key]["revealation"]
+        better_evidence = enhance_evidence(evidence, user_conv_list, agent_conv_list)
+        all_detections[key]["better_evidence"] = better_evidence
+
     if len(all_detections) <= max_display:
         return all_detections
 
@@ -64,36 +88,61 @@ def disable_copy_paste():
         </style>
         
         <script>
-            // Function to disable copy/paste events
-            function disableCopyPaste() {
-                const textareas = parent.document.querySelectorAll('.stTextArea textarea');
-                textareas.forEach(textarea => {
-                    textarea.addEventListener('copy', e => e.preventDefault());
-                    textarea.addEventListener('cut', e => e.preventDefault());
-                    textarea.addEventListener('paste', e => e.preventDefault());
-                    textarea.addEventListener('contextmenu', e => e.preventDefault());
-                    
-                    // Disable keyboard shortcuts
-                    textarea.addEventListener('keydown', e => {
-                        if ((e.ctrlKey || e.metaKey) && 
-                            (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
-                            e.preventDefault();
-                        }
-                    });
-                });
-            }
+    // Function to disable copy/paste events for text inputs
+    function disableCopyPasteForTextInputs() {
+        const textInputs = parent.document.querySelectorAll('.stTextInput input');
+        textInputs.forEach(input => {
+            input.addEventListener('copy', e => e.preventDefault());
+            input.addEventListener('cut', e => e.preventDefault());
+            input.addEventListener('paste', e => e.preventDefault());
+            input.addEventListener('contextmenu', e => e.preventDefault());
             
-            // Run immediately and also after a short delay to ensure elements are loaded
-            disableCopyPaste();
-            setTimeout(disableCopyPaste, 500);
-            
-            // Monitor for dynamic changes
-            const observer = new MutationObserver(disableCopyPaste);
-            observer.observe(parent.document.body, {
-                childList: true,
-                subtree: true
+            // Disable keyboard shortcuts
+            input.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && 
+                    (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+                        e.preventDefault();
+                }
             });
-        </script>
+        });
+    }
+
+    // Function to disable copy/paste events for text areas
+    function disableCopyPasteForTextAreas() {
+        const textareas = parent.document.querySelectorAll('.stTextArea textarea');
+        textareas.forEach(textarea => {
+            textarea.addEventListener('copy', e => e.preventDefault());
+            textarea.addEventListener('cut', e => e.preventDefault());
+            textarea.addEventListener('paste', e => e.preventDefault());
+            textarea.addEventListener('contextmenu', e => e.preventDefault());
+            
+            // Disable keyboard shortcuts
+            textarea.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && 
+                    (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+                        e.preventDefault();
+                }
+            });
+        });
+    }
+
+    // Function to apply both disabling functions
+    function applyAllDisableCopyPaste() {
+        disableCopyPasteForTextInputs();
+        disableCopyPasteForTextAreas();
+    }
+
+    // Run immediately and also after a short delay to ensure elements are loaded
+    applyAllDisableCopyPaste();
+    setTimeout(applyAllDisableCopyPaste, 500);
+
+    // Monitor for dynamic changes
+    const observer = new MutationObserver(applyAllDisableCopyPaste);
+    observer.observe(parent.document.body, {
+        childList: true,
+        subtree: true
+    });
+</script>
     """, height=0)
 
     st.markdown("""
@@ -118,6 +167,7 @@ def disable_copy_paste():
         }
         </style>
         """, unsafe_allow_html=True)
+
 
 def get_survey_info():
     """
@@ -252,16 +302,24 @@ def setup_survey_config():
         st.session_state.user_non_selections = set() # Stores the keys in string format
 
 
+def set_user_conversation():
+    """Sets the user conversation from the chat history."""
+    st.session_state.usr_conv_list = [message["response"] for message in st.session_state.messages
+                     if message["turn"] == "user"]
+    st.session_state.agt_conv_list = [message["response"] for message in st.session_state.messages
+                     if message["turn"] == "assistant"]
+    st.session_state.user_conversation = "\n".join(st.session_state.usr_conv_list)
+    logging.info("User conversation: %s", st.session_state.user_conversation)
+    logging.info("Agent conversation: %s", st.session_state.agt_conv_list)
+    logging.info("User conversation list: %s", st.session_state.usr_conv_list)
+
 def get_user_selections():
     """
     This function asks the user to provide feedback on the revealed detected private information
     and stores the user's feedback, reasoning, and the revealed private information.
     """
     if "user_conversation" not in st.session_state:
-        # Filter out the user messages from the chat history
-        st.session_state.user_conversation = "\n".join([message["response"] for message in st.session_state.messages
-                     if message["turn"] == "user"])
-        logging.info("User conversation: %s", st.session_state.user_conversation)
+        set_user_conversation()
 
     # If complete detections are not obtained in the daemon mode, enforce the user to wait
     if "complete_detections" not in st.session_state:
@@ -282,7 +340,7 @@ def get_user_selections():
 
     # Configuring the setup
     setup_survey_config()
-    disable_copy_paste()
+    disable_copy_paste() # Debug
 
     if not st.session_state.user_selections_fixed:
         # Display the survey information to the user for getting the user selections
@@ -313,8 +371,6 @@ def get_user_selections():
             # Display button to fix the user selections to proceed to the next step and prevent change
             st.button("Next", on_click=fix_user_selections)
 
-    logging.info("Nec: %s", st.session_state.user_nec_reasons_entered)
-    logging.info("Unnec: %s", st.session_state.user_unnec_reasons_entered)
     # User selections are fixed, proceed to the next step
     if (st.session_state.user_selections_fixed
         and not st.session_state.user_nec_reasons_entered):
@@ -332,6 +388,7 @@ def get_user_selections():
         # display_submit_button()
         navigate_to_next_page()
     # st.rerun()
+
 
 def fix_user_selections():
     """
@@ -368,7 +425,7 @@ def get_necessary_reasoning():
             col1.write(st.session_state.survey_info[key]["survey_display"])
             # Commented out for now as the See in chat is not optimal for the user
             with col1.expander("See in chat"):
-                st.write(f":grey[{st.session_state.survey_info[key]['revealation']}]")
+                st.write(f":grey[{st.session_state.survey_info[key]['better_evidence']}]")
             
             _ = col2.text_area("_", key=f"reasoning_{key}_necessary", label_visibility="collapsed",
                                 height=120)
@@ -412,6 +469,7 @@ def set_user_nec_reasoning():
             st.session_state.survey_info[key_part]["selected"] = True
     st.session_state.user_nec_reasons_entered = True
 
+
 def set_user_unnec_reasoning():
     """
     This function sets the user_nec_reasons_entered to True after the user provides 
@@ -446,7 +504,7 @@ def get_unnecessary_reasoning():
                 col1.write(st.session_state.survey_info[key]["survey_display"])
                 # Commented out for now as the See in chat is not optimal for the user
                 with col1.expander("See in chat"):
-                    st.write(f":grey[{st.session_state.survey_info[key]['revealation']}]")
+                    st.write(f":grey[{st.session_state.survey_info[key]['better_evidence']}]")
 
                 # Display the reasoning text area in the second column
                 with col2:
@@ -541,7 +599,7 @@ def store_feedback():
         try:
             db = st.session_state.firestore_db
             # Reference to the collection
-            collection_ref = db.collection('group_two_survey_two_responses')
+            collection_ref = db.collection('group_one_survey_two_responses')
 
             # Create a unique document name using Prolific ID and timestamp
             document_name = f"{prolific_id}_{timestamp}"

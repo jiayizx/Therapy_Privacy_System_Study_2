@@ -26,6 +26,8 @@ def main():
         post_survey_two()
     elif 'survey_3_completed' not in st.session_state:
         post_survey_three()
+    else:
+        st.write("You have already completed the survey. Thank you!")
 
 if __name__ == "__main__":
     main()

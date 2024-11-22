@@ -2,7 +2,7 @@ import asyncio
 import streamlit as st
 import os
 import csv
-from webapp.feedback_utils import (read_posthoc_survey_info_csv, get_user_selections, get_survey_info)
+from webapp.feedback_utils import (read_posthoc_survey_info_csv, get_user_selections, get_survey_info, set_user_conversation)
 import threading
 from streamlit.runtime.scriptrunner import add_script_run_ctx
 
@@ -22,8 +22,7 @@ def prep_survey_two():
 
     # Filter out the user messages from the chat history
     if "user_conversation" not in st.session_state:
-        st.session_state.user_conversation = "\n".join([message["response"] for message in st.session_state.messages
-                     if message["turn"] == "user"])
+        set_user_conversation()
 
     # Load the detections list
     if "posthoc_survey_info" not in st.session_state:

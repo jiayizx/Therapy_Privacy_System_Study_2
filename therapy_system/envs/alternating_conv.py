@@ -81,7 +81,7 @@ class AlternatingConv(Conv):
         print(f"Chat response: {chat_response_str}")
         # If tags not found, use entire response as response_text with no technique
         technique = re.search(r"<technique>(.*?)</technique>", chat_response_str)
-        response = re.search(r"<response>(.*?)(?:</response>)?", chat_response_str)
+        response = re.search(r"<response>(.*?)</response>", chat_response_str)
         
         if not technique and not response:
             # No tags found - use full response as response text

@@ -3,6 +3,7 @@ cohere
 anthropic
 streamlit
 streamlit-extras
+st_pages
 pathlib
 python-dotenv
 gymnasium
