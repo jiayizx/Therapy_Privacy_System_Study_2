@@ -31,7 +31,7 @@ def save_survey_response_to_firebase(prolific_id, survey_data):
 
     try:
         # Save the survey document to the Firestore collection named "survey_one_responses"
-        db.collection("group_one_survey_one_responses").document(document_name).set(survey_document)
+        db.collection("group_two_survey_one_responses").document(document_name).set(survey_document)
         logging.info("Survey Part 1 response successfully saved to Firebase Firestore.")
     except Exception as e:
         logging.error(f"Failed to save survey response to Firebase Firestore: {e}")
