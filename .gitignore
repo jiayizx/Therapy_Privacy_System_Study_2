@@ -16,3 +16,6 @@ __pycache__/*
 
 # Add all the pycache files to the .gitignore file
 *.pyc
+
+# exclude retrieve_data/data directory
+retrieve_data/data
