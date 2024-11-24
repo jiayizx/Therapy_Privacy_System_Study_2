@@ -43,7 +43,37 @@ def retrive_all_survey_one():
 
 
 def retrive_all_survey_two():
-    pass
+    """
+    Retrieve all survey two responses from Firestore and save each to a separate file.
+    """
+    try:
+        # Reference the collection
+        survey_collection = db.collection("group_two_survey_two_responses")
+        docs = survey_collection.stream()
+
+        # Store each survey response in a separate JSON file
+        output_directory = "retrieve_data/data"
+        os.makedirs(output_directory, exist_ok=True)
+
+        # Retrieve all survey responses and save each to a separate file
+        for doc in docs:
+            survey_data = doc.to_dict()
+            prolific_id = survey_data["prolific_id"]
+            survey_response = {}
+            survey_response['all_detections'] = survey_data["complete_detections"]
+            survey_response['necessary_options'] = survey_data["user_selections"]
+            survey_response['reasons'] = survey_data['survey_info']
+
+            # Store each survey response in a separate JSON file
+            with open(os.path.join(output_directory, f"survey_two_response_{prolific_id}.json"), "w") as outfile:
+                json.dump(survey_response, outfile)
+
+        logging.info("All survey responses successfully retrieved and stored locally in separate files.")
+        return True
+
+    except Exception as e:
+        logging.error(f"Failed to retrieve survey responses from Firebase Firestore: {e}")
+        return None
 
 
 def retrive_all_survey_three():
@@ -114,6 +144,12 @@ def main():
     # Retrieve all survey one responses
     if retrive_all_survey_one():
         print("All survey one responses retrieved and saved locally.")
+    else:
+        print("No survey response found or an error occurred.")
+
+    # Retrieve all survey two responses
+    if retrive_all_survey_two():
+        print("All survey two responses retrieved and saved locally.")
     else:
         print("No survey response found or an error occurred.")
 
