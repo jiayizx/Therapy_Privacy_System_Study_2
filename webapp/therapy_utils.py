@@ -31,7 +31,7 @@ def stream_data(msg):
         time.sleep(0.02)
 
 
-def generate_response(system_prompt, user_prompt, model="gpt-4o-mini", max_tokens=100, temperature=0):
+def generate_response(system_prompt, user_prompt, model="gpt-4o-mini", max_tokens=100, temperature=0.7):
     """
     Generates a response using the GPT-4 model with system and user prompts.
     """
